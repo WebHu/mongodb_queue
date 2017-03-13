@@ -107,7 +107,7 @@ exports.intervalQueue = function (curr_queue) {
         }, 5000);
     });
     return p;
-}
+};
 
 //处理获取的queue msg
 
@@ -127,4 +127,4 @@ exports.ackQueue=function (queueName,ack) {
         });
     });
     return p;
-}
+};

@@ -82,8 +82,6 @@ router.use('/', function (req, res, next) {
     if (req.method === "PUT" || req.method === "POST") {
         console.log("put...");
         validateData(req, res, next).then(function (v) {
-
-            console.log("dddd");
             next();
 
         }, function (err) {
@@ -170,11 +168,11 @@ router.post('/ackQueue', function (req, res, next) {
     queueDao.ackQueue(curr_queue, ack).then(function (data) {
         console.log(data);
         sendJSONresponse(res, 200, {"message": "处理成功"});
-        return;
+
     }, function (err) {
         console.error(err);
         sendJSONresponse(res, 200, {"message": "处理失败"});
-        return;
+
     });
 
 });

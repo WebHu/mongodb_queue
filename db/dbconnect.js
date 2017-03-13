@@ -61,7 +61,7 @@ function createCols() {
                     });
                 }).then(function (data) {
                     global.db_queues_map.forEach(function (value, key) {
-                        console.log("xxx111")
+                        console.log("xxx111");
                         db.createCollection("dead-" + key);
                         db.createCollection(key);
                     });
