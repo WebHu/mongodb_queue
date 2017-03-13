@@ -59,7 +59,7 @@ var getQueue = function (queueName) {
             visibility: 30,
             delay: 0,
             deadQueue: deadQueue,
-            maxRetries: 2
+            maxRetries: 3
         });
         queue.get(function (err, msg) {
             if (err) {

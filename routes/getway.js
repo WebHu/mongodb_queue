@@ -26,7 +26,7 @@ function validateData(req, res, next) {
         var clientReference = req.body.clientReference;
         var payload = req.body.payload;
         if (!clientReference || !payload) {
-            resolve(0);
+            reject("clientReference/payload is undefined");
         } else {
             try {
                 //判断是否为标准的json
@@ -63,51 +63,70 @@ router.use('/', function (req, res, next) {
     if (req.method === "PUT" || req.method === "POST") {
         curr_queue = h.get(req.body.queueScope);
     } else if (req.method === "GET") {
-        curr_queue = h.get(req.query.queueScope);
+        //  curr_queue = h.get(req.query.queueScope);
     }
     console.log("curr_queue:" + curr_queue);
-    if (!curr_queue) {
-        console.log("req.body.queueScope.." + req.body.queueScope);
-        sendJSONresponse(res, 200, {
-            "message": "数据校验不通过....no collection"
-        });
+    next();
+    /* if (!curr_queue) {
+     console.log("req.body.queueScope.." + req.body.queueScope);
+     sendJSONresponse(res, 200, {
+     "message": "数据校验不通过....no collection"
+     });
 
-    } else {
-        next();
+     } else {
+     next();
+     }*/
+});
+
+//获取前数据校验
+router.use('/getQueue/:curr_queue', function (req, res, next) {
+    var curr_queue = req.params.curr_queue;
+    console.log("getQueue..." + curr_queue);
+    //   next();
+    if (!curr_queue) {
+        sendJSONresponse(res, 200, {
+            "message": "数据校验不通过....wrong collection"
+        });
+        return;
+    }else {
+       // next();
+        var h = global.queues_map;
+        if (h.has(curr_queue)) {
+            console.log("xx")
+            next();
+        } else {
+            sendJSONresponse(res, 200, {
+                "message": "数据校验不通过....wrong collection"
+            });
+            return;
+        }
     }
 });
 
 //添加前数据校验
-router.use('/', function (req, res, next) {
+router.use('/addQueue', function (req, res, next) {
+    console.log("addQueue...");
     if (req.method === "PUT" || req.method === "POST") {
-        console.log("put...");
         validateData(req, res, next).then(function (v) {
             next();
-
         }, function (err) {
             console.error(err);
             sendJSONresponse(res, 200, {
-                "message": "数据校验未通过.."
+                "message": "数据校验未通过"
             });
         });
 
-    } else if (req.method === "GET") {
-        next();
-        /*        var v = validateDataForGet(req, res, next);
-         if (v === 0) {
-         sendJSONresponse(res, 200, {
-         "message": "数据校验未通过..clientReference"
-         });
-         return;
-         } else {
-         next();
-         }*/
     }
 
 });
 
-//校验数据是否正确
+
+//确认前校验数据
 router.use('/ackQueue', function (req, res, next) {
+    if(!curr_queue){
+        sendJSONresponse(res, 200, {"message": "数据校验未通过..wrong collection"});
+        return;
+    }
     console.log("ackQueue:" + req.body.ack);
     if (req.method === "POST") {
         //获取ack
@@ -118,8 +137,6 @@ router.use('/ackQueue', function (req, res, next) {
             next();
         }
     }
-
-
 });
 //header的body部分转换为json
 var jsonParser = bodyParser.json();
@@ -129,15 +146,14 @@ router.put("/addQueue", jsonParser, function (req, res, next) {
     // var queueName = "tms_queue";
     //添加到queue
     queueDao.puQueue(curr_queue, req).then(function (data) {
-        console.log("data:" + data);
         if (!data || data == 0) {
             sendJSONresponse(res, 200, {
-                "message": "queue add failed.."
+                "message": "发送失败"
             });
 
         } else {
             sendJSONresponse(res, 200, {
-                "message": "queue add successful....."
+                "message": "发送成功"
             });
 
         }
@@ -146,8 +162,8 @@ router.put("/addQueue", jsonParser, function (req, res, next) {
 
 
 //获取消息队列中的信息
-router.get('/getQueue', function (req, res, next) {
-
+router.get('/getQueue/:curr_queue', function (req, res, next) {
+    var curr_queue = req.params.curr_queue;
     //var queueName = 'tms_queue';
     console.log("get...." + curr_queue);
     //获取消息，先进先出
@@ -163,18 +179,16 @@ router.get('/getQueue', function (req, res, next) {
 
 //修改状态为已确认，处理queue
 router.post('/ackQueue', function (req, res, next) {
-
     var ack = req.body.ack;
     queueDao.ackQueue(curr_queue, ack).then(function (data) {
         console.log(data);
         sendJSONresponse(res, 200, {"message": "处理成功"});
-
+        return;
     }, function (err) {
         console.error(err);
         sendJSONresponse(res, 200, {"message": "处理失败"});
-
+        return;
     });
-
 });
 
 
