@@ -128,3 +128,23 @@ exports.ackQueue=function (queueName,ack) {
     });
     return p;
 };
+
+//获取某租户下某用户的queue
+exports.getQueuesByMyself=function (q,appid,companyid,clientReference) {
+    var p=new Promise(function (resove,reject) {
+     //   queueNames.forEach(function (q) {
+            var deadQueue = mongoDbQueue(db.dbConn, "dead-" + q);
+            var queue = mongoDbQueue(db.dbConn, q, {
+                deadQueue: deadQueue
+            });
+            queue.getQueuesByMyself({"appid":appid,"companyid":companyid,"clientReference":clientReference},function (err,docs) {
+                if(err){
+                    reject(err);
+                }else{
+                    resove(docs)
+                }
+            });
+      //  });
+    });
+    return p;
+};

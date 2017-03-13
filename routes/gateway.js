@@ -65,8 +65,23 @@ router.use('/', function (req, res, next) {
     } else if (req.method === "GET") {
         //  curr_queue = h.get(req.query.queueScope);
     }
-    console.log("curr_queue:" + curr_queue);
-    next();
+
+    //验证身份信息
+    var token = require("./token");
+    token.accessToken("https://id.shipxy.com/core/connect/accesstokenvalidation", "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6ImEzck1VZ01Gdjl0UGNsTGE2eUYzekFrZnF1RSIsImtpZCI6ImEzck1VZ01Gdjl0UGNsTGE2eUYzekFrZnF1RSJ9.eyJpc3MiOiJodHRwczovL2lkLnNoaXB4eS5jb20vY29yZSIsImF1ZCI6Imh0dHBzOi8vaWQuc2hpcHh5LmNvbS9jb3JlL3Jlc291cmNlcyIsImV4cCI6MTQ4ODg4MDg3NiwibmJmIjoxNDg4ODc3Mjc2LCJjbGllbnRfaWQiOiJkZW1vaWQiLCJzY29wZSI6WyJvcGVuaWQiLCJwcm9maWxlIl0sInN1YiI6Ijk2YWU5MTQzZDJjNzBlMDkiLCJhdXRoX3RpbWUiOjE0ODg4Njg0MzgsImlkcCI6Imlkc3J2IiwiYW1yIjpbInBhc3N3b3JkIl19.ZAx35a1_ed-8aDFS-ec-AQ1e7kT9PdSyafzfmEP1Nl3cT1-FsBVsok9b4OMQg3eGNjYBacBXrLWBytxEU0inmJNNKYnp_toGhB71kqb53AjmluGk-e0aDAhq75Ms_PwbdJ87bJAb8AlbQy8jUJ8kJIh-te4FuzUfb1oZ8C0Kt9DkU3ve-xKAy3K4Ukuc9EsZ9E3tyQeKrcNJTFVoZi_X-Y2jLlCqcqoDTkJ7yqjnODlUGRAoUtupUT0FWwlFTj-Um20klmf35BV_SP2QYqaL37dZ8GQMXMZv0ibKNtAxMqE5HwTgh9qOMf7Rpgo5Ks3_CSxYYVTcQw0vbx8L6t_T-w").then(function (data) {
+        console.log(data);
+        if (data.Message) {
+            /*sendJSONresponse(res, 200, {
+             "message": "令牌失效"
+             });*/
+            next();
+        } else {
+            next();
+        }
+
+    });
+
+
     /* if (!curr_queue) {
      console.log("req.body.queueScope.." + req.body.queueScope);
      sendJSONresponse(res, 200, {
@@ -88,8 +103,8 @@ router.use('/getQueue/:curr_queue', function (req, res, next) {
             "message": "数据校验不通过....wrong collection"
         });
         return;
-    }else {
-       // next();
+    } else {
+        // next();
         var h = global.queues_map;
         if (h.has(curr_queue)) {
             console.log("xx")
@@ -123,7 +138,7 @@ router.use('/addQueue', function (req, res, next) {
 
 //确认前校验数据
 router.use('/ackQueue', function (req, res, next) {
-    if(!curr_queue){
+    if (!curr_queue) {
         sendJSONresponse(res, 200, {"message": "数据校验未通过..wrong collection"});
         return;
     }
@@ -191,6 +206,30 @@ router.post('/ackQueue', function (req, res, next) {
     });
 });
 
+//获取与自己相关的所有queue
 
+router.get('/getQueuesByMyself/:appid/:companyid/:clientReference', function (req, res, next) {
+    var h = global.queues_map.keys();
+    //根据平台id、租户id、用户标识获取
+    queueDao.getQueuesByMyself(h[0], req.params.appid, req.params.companyid, req.params.clientReference).then(function (data) {
+        var datas = [];
+        datas.push(data);
+        return datas;
+    }, function (err) {
+        console.error(err);
+        return [];
+    }).then(function (datas) {
+        queueDao.getQueuesByMyself(h[1], req.params.appid, req.params.companyid, req.params.clientReference).then(function (data) {
+            datas.push(data);
+            sendJSONresponse(res, 200, datas);
+            return;
+        }, function (err) {
+            console.error(err);
+            sendJSONresponse(res, 200, {"message": "没有数据"});
+            return;
+        });
+    });
+
+});
 //导出路由
 module.exports = router;
