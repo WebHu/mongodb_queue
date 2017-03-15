@@ -12,6 +12,8 @@ var users = require('./routes/users');
 require('./models/queue_init');
 //require( './models/dataSchema');
 var mq=require('./routes/gateway');
+//longpolling
+var longpolling=require('./routes/long-poll');
 /*************************************************/
 var app = express();
 
@@ -30,23 +32,30 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', index);
 app.use('/users', users);
 //添加异步数据交换中心的路由
-app.use('/getway', mq);
+app.use('/gateway', mq);
+//longpolling 测试
+app.use('/longpolling', longpolling);
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   var err = new Error('Not Found');
   err.status = 404;
   next(err);
 });
-
+//设置响应内容
+var sendJSONresponse = function (res, status, content) {
+    res.status(status);
+    res.json(content);
+};
 // error handler
 app.use(function(err, req, res, next) {
   // set locals, only providing error in development
-  res.locals.message = err.message;
+/*  res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
 
   // render the error page
   res.status(err.status || 500);
-  res.render('error');
+  res.render('error');*/
+    sendJSONresponse(res,err.status || 500, {"Message":err.message} );
 });
 
 module.exports = app;

@@ -28,7 +28,7 @@ exports.createCollections = function () {
 };
 //add queue
 //exports.queues_map=db.queues_map;
-exports.puQueue = function (queueName, req) {
+exports.puQueue = function (queueName, req, longpoll) {
     var p = new Promise(function (resove, reject) {
         var deadQueue = mongoDbQueue(db.dbConn, "dead-" + queueName);
         var queue = mongoDbQueue(db.dbConn, queueName, {
@@ -42,7 +42,8 @@ exports.puQueue = function (queueName, req) {
             if (err) {
                 reject(err);
             } else {
-                resove(1);
+                //longpoll.create("/getQueueForTms");
+                resove(id);
             }
         });
 
@@ -67,7 +68,6 @@ var getQueue = function (queueName) {
                 reject(err);
             }
             else {
-                console.log("xxxx:" + msg);
                 resove(msg);
             }
 
@@ -76,7 +76,7 @@ var getQueue = function (queueName) {
     });
     return p;
 };
-
+exports.getQue = getQueue;
 //长轮询获取queue
 exports.intervalQueue = function (curr_queue) {
     var p = new Promise(function (resove, reject) {
@@ -111,17 +111,17 @@ exports.intervalQueue = function (curr_queue) {
 
 //处理获取的queue msg
 
-exports.ackQueue=function (queueName,ack) {
-    var p=new Promise(function (resove,reject) {
+exports.ackQueue = function (queueName, ack) {
+    var p = new Promise(function (resove, reject) {
 
         var deadQueue = mongoDbQueue(db.dbConn, "dead-" + queueName);
         var queue = mongoDbQueue(db.dbConn, queueName, {
             deadQueue: deadQueue
         });
-        queue.ack(ack,function (err,newMsg) {
-            if(err){
+        queue.ack(ack, function (err, newMsg) {
+            if (err) {
                 reject(err);
-            }else{
+            } else {
                 resove(newMsg);
             }
         });
@@ -130,21 +130,69 @@ exports.ackQueue=function (queueName,ack) {
 };
 
 //获取某租户下某用户的queue
-exports.getQueuesByMyself=function (q,appid,companyid,clientReference) {
-    var p=new Promise(function (resove,reject) {
-     //   queueNames.forEach(function (q) {
-            var deadQueue = mongoDbQueue(db.dbConn, "dead-" + q);
-            var queue = mongoDbQueue(db.dbConn, q, {
-                deadQueue: deadQueue
-            });
-            queue.getQueuesByMyself({"appid":appid,"companyid":companyid,"clientReference":clientReference},function (err,docs) {
-                if(err){
-                    reject(err);
-                }else{
-                    resove(docs)
+/*
+ exports.getQueuesByMyself=function (q,appid,companyid,clientReference) {
+ var p=new Promise(function (resove,reject) {
+ //   queueNames.forEach(function (q) {
+ var deadQueue = mongoDbQueue(db.dbConn, "dead-" + q);
+ var queue = mongoDbQueue(db.dbConn, q, {
+ deadQueue: deadQueue
+ });
+ queue.getQueuesByMyself({"appid":appid,"companyid":companyid,"clientReference":clientReference},function (err,docs) {
+ if(err){
+ reject(err);
+ }else{
+ resove(docs)
+ }
+ });
+ //  });
+ });
+ return p;
+ };
+ */
+
+//获取某租户下某用户的queue
+exports.getQueuesByMyself = function (q, params) {
+    var p = new Promise(function (resove, reject) {
+        //   queueNames.forEach(function (q) {
+        var deadQueue = mongoDbQueue(db.dbConn, "dead-" + q);
+        var queue = mongoDbQueue(db.dbConn, q, {
+            deadQueue: deadQueue
+        });
+        queue.getQueuesByMyself(params, function (err, docs) {
+            if (err) {
+                reject(err);
+            } else {
+                resove(docs)
+            }
+        });
+        //  });
+    });
+    return p;
+};
+//删除
+exports.deleteQueueById = function (id, queueName) {
+    var p = new Promise(function (resove, reject) {
+        //根据name获取collection
+        mongoose.connection.db.listCollections({name: queueName})
+            .next(function (err, collinfo) {
+                if (collinfo) {
+                    //获取collection
+                   var c=db.getCol(collinfo.name);
+                    // The collection exists
+                    c.findAndRemove({_id: mongoose.Types.ObjectId(id)}, function (err, node) {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resove(node);
+                        }
+                    });
+                } else {
+                    reject("no collection")
                 }
             });
-      //  });
+
     });
+
     return p;
 };

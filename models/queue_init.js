@@ -14,7 +14,12 @@ queues_map.set("tuochebao_queue","tuochebao_queue");
 global.db_queues_map = new HashMap();
 db_queues_map.set("tms_queue","tms_queue");
 db_queues_map.set("tuochebao_queue","tuochebao_queue");
-
+//设置响应内容
+var sendJSONresponse = function (res, status, content) {
+    res.status(status);
+    res.json(content);
+};
+exports.sendJSONresponse=sendJSONresponse;
 
 /*
 function getConn() {

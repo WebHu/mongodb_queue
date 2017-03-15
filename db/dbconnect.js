@@ -31,6 +31,10 @@ mongoose.connect(connectionString, options, function (err, res) {
 //获取连接
 var db = mongoose.connection;
 exports.dbConn = db;
+
+exports.getCol=function(name){
+       return db.collection(name);
+};
 //db.on('error', console.error.bind(console, 'mongoose connection error:'));等同下面
 db.on('error', function (err) {
     console.log('Mongoose connection error: ' + err);

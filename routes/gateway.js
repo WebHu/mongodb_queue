@@ -14,11 +14,9 @@ var https = require("https");
 //引入dao
 var queueDao = require('../dao/queueDao');
 
-//设置响应内容
-var sendJSONresponse = function (res, status, content) {
-    res.status(status);
-    res.json(content);
-};
+var init = require('../models/queue_init');
+
+
 //中间件用于校验提交的数据,put/post
 function validateData(req, res, next) {
     var p = new Promise(function (resolve, reject) {
@@ -99,21 +97,21 @@ router.use('/getQueue/:curr_queue', function (req, res, next) {
     console.log("getQueue..." + curr_queue);
     //   next();
     if (!curr_queue) {
-        sendJSONresponse(res, 200, {
+        init.sendJSONresponse(res, 200, {
             "message": "数据校验不通过....wrong collection"
         });
-        return;
+
     } else {
         // next();
         var h = global.queues_map;
         if (h.has(curr_queue)) {
-            console.log("xx")
+            console.log("xx");
             next();
         } else {
-            sendJSONresponse(res, 200, {
+            init.sendJSONresponse(res, 200, {
                 "message": "数据校验不通过....wrong collection"
             });
-            return;
+
         }
     }
 });
@@ -126,7 +124,7 @@ router.use('/addQueue', function (req, res, next) {
             next();
         }, function (err) {
             console.error(err);
-            sendJSONresponse(res, 200, {
+            init.sendJSONresponse(res, 200, {
                 "message": "数据校验未通过"
             });
         });
@@ -139,7 +137,7 @@ router.use('/addQueue', function (req, res, next) {
 //确认前校验数据
 router.use('/ackQueue', function (req, res, next) {
     if (!curr_queue) {
-        sendJSONresponse(res, 200, {"message": "数据校验未通过..wrong collection"});
+        init.sendJSONresponse(res, 200, {"message": "数据校验未通过..wrong collection"});
         return;
     }
     console.log("ackQueue:" + req.body.ack);
@@ -147,11 +145,17 @@ router.use('/ackQueue', function (req, res, next) {
         //获取ack
         var ack = req.body.ack;
         if (!ack) {
-            sendJSONresponse(res, 200, {"message": "数据校验未通过"});
+            init.sendJSONresponse(res, 200, {"message": "数据校验未通过"});
         } else {
             next();
         }
     }
+});
+
+//删除前校验数据
+router.use('/deleteQueue/:id', function (req, res, next) {
+    console.log("deleteQueue");
+    next();
 });
 //header的body部分转换为json
 var jsonParser = bodyParser.json();
@@ -162,16 +166,18 @@ router.put("/addQueue", jsonParser, function (req, res, next) {
     //添加到queue
     queueDao.puQueue(curr_queue, req).then(function (data) {
         if (!data || data == 0) {
-            sendJSONresponse(res, 200, {
+            init.sendJSONresponse(res, 200, {
                 "message": "发送失败"
             });
 
         } else {
-            sendJSONresponse(res, 200, {
+            init.sendJSONresponse(res, 200, {
                 "message": "发送成功"
             });
 
         }
+    }).catch(function (err) {
+        console.error(err);
     });
 });
 
@@ -184,10 +190,12 @@ router.get('/getQueue/:curr_queue', function (req, res, next) {
     //获取消息，先进先出
     queueDao.intervalQueue(curr_queue).then(function (data) {
         if (data) {
-            sendJSONresponse(res, 200, data);
+            init.sendJSONresponse(res, 200, data);
         } else {
-            sendJSONresponse(res, 200, {"message": "没有数据"});
+            init.sendJSONresponse(res, 200, {"message": "没有数据"});
         }
+    }).catch(function (err) {
+        console.error(err);
     });
 });
 
@@ -195,14 +203,20 @@ router.get('/getQueue/:curr_queue', function (req, res, next) {
 //修改状态为已确认，处理queue
 router.post('/ackQueue', function (req, res, next) {
     var ack = req.body.ack;
+    //生效时间
+    var visible = req.body.visible;
+    //存活时间
+    var ttl = req.body.ttl;
     queueDao.ackQueue(curr_queue, ack).then(function (data) {
         console.log(data);
-        sendJSONresponse(res, 200, {"message": "处理成功"});
-        return;
+        init.sendJSONresponse(res, 200, {"message": "处理成功"});
+
     }, function (err) {
         console.error(err);
-        sendJSONresponse(res, 200, {"message": "处理失败"});
-        return;
+        init.sendJSONresponse(res, 200, {"message": "处理失败"});
+
+    }).catch(function (err) {
+        console.error(err);
     });
 });
 
@@ -221,15 +235,69 @@ router.get('/getQueuesByMyself/:appid/:companyid/:clientReference', function (re
     }).then(function (datas) {
         queueDao.getQueuesByMyself(h[1], req.params.appid, req.params.companyid, req.params.clientReference).then(function (data) {
             datas.push(data);
-            sendJSONresponse(res, 200, datas);
-            return;
+            init.sendJSONresponse(res, 200, datas);
+
         }, function (err) {
             console.error(err);
-            sendJSONresponse(res, 200, {"message": "没有数据"});
-            return;
+            init.sendJSONresponse(res, 200, {"message": "没有数据"});
+
         });
+    }).catch(function (err) {
+        console.error(err);
     });
 
 });
+
+router.get('/getQueuesByMyself/:appid', function (req, res, next) {
+    var h = global.queues_map.keys();
+    //根据平台id、租户id、用户标识获取
+    var params = {"appid": req.params.appid};
+    queueDao.getQueuesByMyself(h[0], params).then(function (data) {
+        var datas = [];
+        datas.push(data);
+        return datas;
+    }, function (err) {
+        console.error(err);
+        return [];
+    }).then(function (datas) {
+        queueDao.getQueuesByMyself(h[1], params).then(function (data) {
+            datas.push(data);
+            init.sendJSONresponse(res, 200, datas);
+
+        }, function (err) {
+            console.error(err);
+            init.sendJSONresponse(res, 200, {"message": "没有数据"});
+
+        });
+    }).catch(function (err) {
+        console.error(err);
+    });
+
+});
+
+
+//删除queue通过_id
+router.delete("/deleteQueue/:id", function (req, res, next) {
+    var id = req.params.id;
+
+    queueDao.deleteQueueById("58c8b839537af61d2079a571","tms_queue").then(function (data) {
+        console.log("value:"+data.value);
+        if(data.value){
+            init.sendJSONresponse(res, 200, {"message": "删除成功"});
+
+        }else{
+            init.sendJSONresponse(res, 200, {"message": "删除失败"});
+
+        }
+    }, function (err) {
+        init.sendJSONresponse(res, 200, {"message": "删除失败"});
+        console.log(err);
+
+    }).catch(function (err) {
+        console.log(err);
+    });
+
+});
+
 //导出路由
 module.exports = router;
