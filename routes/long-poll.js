@@ -16,21 +16,32 @@ var bodyParser = require("body-parser");
 var https = require("https");
 //引入dao
 var queueDao = require('../dao/queueDao');
-/*
- longpoll.create("/routerpoll");
 
- router.get("/", function (req, res) {
- longpoll.publish("/routerpoll", {
- text: "Some data"
- });
- res.send("Sent data!");
- });*/
+//log
+var log = require("../models/logger");
+var logger = log.logger;
+log.use(router);
+
+//中间件校验
 router.use('/', function (req, res, next) {
     console.log("all:" + global.express_longpoll_emitters["/getQueueForTms"]);
     if (!global.express_longpoll_emitters["/getQueueForTms"]) {
         longpoll.create("/getQueueForTms");
     }
     next();
+});
+//根据id设置listener
+router.use('/addQueueForTms/:id', function (req, res, next) {
+    var id = req.params.id;
+    console.log("all:" + global.express_longpoll_emitters["/getQueueForTms/:id"]);
+    if (!global.express_longpoll_emitters["/getQueueForTms/:id"]) {
+        // longpoll.create("/getQueueForTms."+id);
+        longpoll.create("/getQueueForTms/:id", function (req, res, next) {
+            req.id = req.params.id;
+  //          next();
+        });
+    }
+   next();
 });
 //添加前数据校验
 router.use('/addQueueForTms', function (req, res, next) {
@@ -49,6 +60,25 @@ router.use('/addQueueForTms', function (req, res, next) {
     }
 
 });
+
+//添加前数据校验
+/*router.use('/addQueueForTms/:id', function (req, res, next) {
+    var id = req.params.id;
+    console.log("addQueueForTms..." + id);
+    if (req.method === "PUT" || req.method === "POST") {
+        /!*        validateData(req, res, next).then(function (v) {
+         next();
+         }, function (err) {
+         console.error(err);
+         sendJSONresponse(res, 200, {
+         "message": "数据校验未通过"
+         });
+         });*!/
+        console.log("hehe..id....");
+        next();
+    }
+
+});*/
 
 /*router.get("/getQueueForTms", function (req, res,next) {
  console.log("ss");
@@ -99,6 +129,38 @@ router.put("/addQueueForTms", function (req, res) {
     //  res.send("Sent data!");
 });
 
+//pushlishToid
+router.put("/addQueueForTms/:id", function (req, res) {
+    var id = req.params.id;
+    queueDao.puQueue("tms_queue", req, longpoll).then(function (data) {
+        if (!data) {
+            init.sendJSONresponse(res, 200, {
+                "message": "发送失败"
+            });
+            return;
+        } else {
+            //推送到所有/getQueueForTms请求
+            queueDao.getQue("tms_queue").then(function (data) {
+                if (data) {
+                    //init.sendJSONresponse(res, 200, data);
+                    longpoll.publishToId("/getQueueForTms/:id", id,data);
+                }
+            }, function (err) {
+                console.error(err);
+            });
+            init.sendJSONresponse(res, 200, {
+                "message": "发送成功"
+            });
+
+            return;
+        }
+    }).catch(function (err) {
+        console.error(err);
+    });
+
+    //  res.send("Sent data!");
+});
+
 
 /*var longpollWithDebug = require("express-longpoll")(app, {DEBUG: true});
  //创建监听链接
@@ -111,7 +173,7 @@ router.put("/addQueueForTms", function (req, res) {
  });*/
 //慎用
 process.on('uncaughtException', function () {
-   console.error("error...")
+    console.error("error...")
 });
 module.exports = router;
 
