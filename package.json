@@ -18,6 +18,7 @@
     "serve-favicon": "~2.3.2",
     "express-longpoll": "0.0.2",
     "mongodb-queue":"~3.1.0",
-    "hashmap":"~2.0.6"
+    "hashmap":"~2.0.6",
+    "log4js":"~1.1.1"
   }
 }

@@ -25,8 +25,8 @@ var queueDao = require('../dao/queueDao');
  });
  res.send("Sent data!");
  });*/
-router.use('/',function (req,res,next) {
-    console.log("all:"+global.express_longpoll_emitters["/getQueueForTms"]);
+router.use('/', function (req, res, next) {
+    console.log("all:" + global.express_longpoll_emitters["/getQueueForTms"]);
     if (!global.express_longpoll_emitters["/getQueueForTms"]) {
         longpoll.create("/getQueueForTms");
     }
@@ -51,32 +51,31 @@ router.use('/addQueueForTms', function (req, res, next) {
 });
 
 /*router.get("/getQueueForTms", function (req, res,next) {
-    console.log("ss");
-    //获取消息，先进先出
-    queueDao.getQue("tms_queue").then(function (data) {
-        if (data) {
-            init.sendJSONresponse(res, 200, data);
-        } else {
-            //init.sendJSONresponse(res, 200, {"message": "没有数据"});
-            //创建监听
-          //  longpoll.create("/getQueueForTms");
-        }
-    },function (err) {
-        console.error(err);
-    });
+ console.log("ss");
+ //获取消息，先进先出
+ queueDao.getQue("tms_queue").then(function (data) {
+ if (data) {
+ init.sendJSONresponse(res, 200, data);
+ } else {
+ //init.sendJSONresponse(res, 200, {"message": "没有数据"});
+ //创建监听
+ //  longpoll.create("/getQueueForTms");
+ }
+ },function (err) {
+ console.error(err);
+ });
 
-    //  res.send("Sent data!");
-});*/
-
+ //  res.send("Sent data!");
+ });*/
 
 
 router.put("/addQueueForTms", function (req, res) {
-    queueDao.puQueue("tms_queue", req,longpoll).then(function (data) {
+    queueDao.puQueue("tms_queue", req, longpoll).then(function (data) {
         if (!data) {
             init.sendJSONresponse(res, 200, {
                 "message": "发送失败"
             });
-
+            return;
         } else {
             //推送到所有/getQueueForTms请求
             queueDao.getQue("tms_queue").then(function (data) {
@@ -84,14 +83,14 @@ router.put("/addQueueForTms", function (req, res) {
                     //init.sendJSONresponse(res, 200, data);
                     longpoll.publish("/getQueueForTms", data);
                 }
-            },function (err) {
+            }, function (err) {
                 console.error(err);
             });
             init.sendJSONresponse(res, 200, {
                 "message": "发送成功"
             });
 
-
+            return;
         }
     }).catch(function (err) {
         console.error(err);
@@ -110,10 +109,10 @@ router.put("/addQueueForTms", function (req, res) {
  console.log("pollForAddQueue")
  next();
  });*/
-
-
-
-
+//慎用
+process.on('uncaughtException', function () {
+   console.error("error...")
+});
 module.exports = router;
 
 

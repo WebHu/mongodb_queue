@@ -1,0 +1,35 @@
+{
+  "appenders": [
+    {
+      "type": "console"
+    },
+    {
+      "type": "file",
+      "filename": "logs/logInfo.log",
+      "maxLogSize": 204800,
+      "backups": 10,
+      "category": "logInfo"
+    },
+    {
+      "type": "file",
+      "filename": "logs/logWarn.log",
+      "maxLogSize": 204800,
+      "backups": 10,
+      "category": "logWarn"
+    },
+    {
+      "type": "file",
+      "filename": "logs/logErr.log",
+      "maxLogSize": 204800,
+      "backups": 10,
+      "category": "logErr"
+    }
+  ],
+  "replaceConsole": true,
+  "levels": {
+    "logInfo": "ALL",
+    //等级可以设置ALL,AUTO,INFO,WARN,ERROR
+    "logWarn": "WARN",
+    "logErr": "ERROR"
+  }
+}

@@ -16,6 +16,10 @@ var queueDao = require('../dao/queueDao');
 
 var init = require('../models/queue_init');
 
+//log
+var log=require("../models/logger");
+var logger=log.logger;
+log.use(router);
 
 //中间件用于校验提交的数据,put/post
 function validateData(req, res, next) {
@@ -281,20 +285,21 @@ router.delete("/deleteQueue/:id", function (req, res, next) {
     var id = req.params.id;
 
     queueDao.deleteQueueById("58c8b839537af61d2079a571","tms_queue").then(function (data) {
-        console.log("value:"+data.value);
+
         if(data.value){
             init.sendJSONresponse(res, 200, {"message": "删除成功"});
+            logger.info("queue:%s删除成功",id);
 
         }else{
             init.sendJSONresponse(res, 200, {"message": "删除失败"});
-
+            logger.warn("queue:%s删除成功",id);
         }
     }, function (err) {
         init.sendJSONresponse(res, 200, {"message": "删除失败"});
-        console.log(err);
+        logger.error("queue:%s删除成功",id);
 
     }).catch(function (err) {
-        console.log(err);
+        logger.error("queue:%s删除成功",id);
     });
 
 });
