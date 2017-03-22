@@ -7,6 +7,8 @@
 
 var connectionString, mongoose, db, options, queue, deadQueue;
 mongoose = require('mongoose');
+var log = require("../models/logger");
+var logger = log.logger;
 connectionString = "mongodb://192.168.1.165:27017/mongodb-queue";
 options = {
     db: {
@@ -22,6 +24,7 @@ options = {
 //打开连接
 mongoose.connect(connectionString, options, function (err, res) {
     if (err) {
+        logger.error('[mongoose log] '+err);
         console.log('[mongoose log] Error connecting to: ' + connectionString + '. ' + err);
     } else {
         console.log('[mongoose log] Successfully connected to: ' + connectionString);
@@ -37,6 +40,7 @@ exports.getCol=function(name){
 };
 //db.on('error', console.error.bind(console, 'mongoose connection error:'));等同下面
 db.on('error', function (err) {
+    logger.error('[mongoose log] '+err);
     console.log('Mongoose connection error: ' + err);
 });
 //var HashMap=require("hashmap");
@@ -50,11 +54,12 @@ db.on('connected', function () {
 //获取db的所有的collections
 
 function createCols() {
+    try {
         var MongoClient = require('mongodb').MongoClient;
 
         MongoClient.connect(connectionString, function (err, db) {
             if (err) {
-                console.error(err);
+                logger.error('[create collection] '+err);
             } else {
                 db.collections().then(function (data) {
                     data.forEach(function (d) {
@@ -65,24 +70,27 @@ function createCols() {
                     });
                 }).then(function (data) {
                     global.db_queues_map.forEach(function (value, key) {
-                        console.log("xxx111");
                         db.createCollection("dead-" + key);
                         db.createCollection(key);
                     });
-                   //queueDao.createCollections();
-                  //  db.close();
+                    //queueDao.createCollections();
+                    //  db.close();
                 }).catch(function (err) {
-                    console.log("ca..");
-                    console.error(err);
+                    logger.error('[create collection] '+err);
                 });
             }
 
         });
+    }catch (err){
+        logger.error('[create collection] '+err);
+    }
+
 
 }
 
 //断开连接事件
 db.on('disconnected', function () {
+    logger.warn('[mongoose disconnected] ');
     console.log("mongoose disconnected to" + connectionString);
 });
 //监听进程退出
@@ -90,6 +98,7 @@ process.on('SIGINT', function () {
     console.log("SIGINT ..");
     db.close(function () {
         console.log("disconnected ..");
+        logger.warn('[process SIGINT] ');
     });
     process.exit(0);
 });

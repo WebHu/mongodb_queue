@@ -218,3 +218,7 @@ db.person.ensureIndex({"name":1},{"unique":true})。
 种操作的性能，因为这玩意需要实时维护，所以啥问题都要综合考虑一下，这里就把刚才建立的索引清空掉来演示一下:dropIndexes的使用。
 
 ![](http://pic002.cnblogs.com/images/2012/214741/2012022900492239.png)
+
+
+### 如果需要启动调试，需要修改package.json
+ * 把"start": "node ./bin/www" 修改为   "start": "node  %NODE_DEBUG_OPTION%  ./bin/www"

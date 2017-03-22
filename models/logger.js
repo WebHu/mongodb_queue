@@ -4,11 +4,8 @@
  * date:2017/3/16 11:02
  * desc:日志管理类
 */
-
-
-
 var log4js = require('log4js');
-
+//log配置
 log4js.configure({
 
     appenders: [
@@ -30,7 +27,7 @@ log4js.configure({
     ],
     replaceConsole: true,   //替换console.log
     levels:{
-        dateFileLog: 'info',
+        dateFileLog: 'debug',
         console: 'debug'
     }
 });

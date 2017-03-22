@@ -2,7 +2,7 @@
  * fileName:queue_init.js
  * author:gamehu
  * date:2017/3/8 17:33
- * desc:初始化异步数据中心队列数据
+ * desc:初始化工作——异步数据中心
 */
 
 //引入hashmap
