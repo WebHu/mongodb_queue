@@ -13,21 +13,21 @@ var logger = log.logger;
 var Promise = require('bluebird');
 //创建queue
 /*exports.createCollections = function () {
-    global.db_queues_map.forEach(function (value, key) {
-        console.log(key + " : " + value);
-        var deadQueue = mongoDbQueue(db.dbConn, 'dead-' + key, {
-            visibility: 3000,
-            delay: 0,
-            maxRetries: 2
-        });
-        var queue = mongoDbQueue(db.dbConn, key, {
-            visibility: 30,
-            delay: 0,
-            deadQueue: deadQueue,
-            maxRetries: 2
-        });
-    });
-};*/
+ global.db_queues_map.forEach(function (value, key) {
+ console.log(key + " : " + value);
+ var deadQueue = mongoDbQueue(db.dbConn, 'dead-' + key, {
+ visibility: 3000,
+ delay: 0,
+ maxRetries: 2
+ });
+ var queue = mongoDbQueue(db.dbConn, key, {
+ visibility: 30,
+ delay: 0,
+ deadQueue: deadQueue,
+ maxRetries: 2
+ });
+ });
+ };*/
 //add queue
 //exports.queues_map=db.queues_map;
 exports.puQueue = function (queueName, req, longpoll) {
@@ -55,26 +55,26 @@ exports.puQueue = function (queueName, req, longpoll) {
 
 //get queue
 
-var getQueue = function (queueName,params) {
+var getQueue = function (queueName, params) {
     try {
         var p = new Promise(function (resove, reject) {
             var deadQueue = mongoDbQueue(db.dbConn, "dead-" + queueName);
             var queue = mongoDbQueue(db.dbConn, queueName, {
-                visibility: 30,
-                delay: 0,
+                visibility: global.queueVisibility,
+                delay:global.queueDelay,
                 deadQueue: deadQueue,
-                maxRetries: 3
+                maxRetries: global.queueMaxRetries
             });
-            var param={};
-            if(params){
-                param=params;
+            var param = {};
+            if (params) {
+                param = params;
             }
-            queue.get(param,function (err, msg) {
+            queue.get({params:param}, function (err, msg) {
                 if (err) {
                     reject(err);
                 }
                 else {
-                   // console.log("时间间隔"+msg.visible-(new Date()).toISOString())
+                    // console.log("时间间隔"+msg.visible-(new Date()).toISOString())
                     resove(msg);
                 }
 
@@ -82,7 +82,7 @@ var getQueue = function (queueName,params) {
 
         });
         return p;
-    }catch (err){
+    } catch (err) {
         console.error(err);
         logger.error(err);
     }
@@ -90,34 +90,39 @@ var getQueue = function (queueName,params) {
 };
 exports.getQue = getQueue;
 //长轮询获取queue
-exports.intervalQueue = function (curr_queue) {
+exports.intervalQueue = function (curr_queue,companyid) {
     var p = new Promise(function (resove, reject) {
-        var data;
-        var interval;
-        //默认一秒查询一次
-        interval = setInterval(function () {
-            getQueue(curr_queue).then(function (message) {
-                console.log("list_messages:" + message);
-                data = message;
-                if (message) {
-                    resove(data);
-                    //查到数据clear time，然后返回
-                    clearInterval(interval);
-                    clearTimeout(timeOut);
-                }
-            }, function (err) {
-                reject(err);
-                //   console.error(err);
-            }).catch(function (err) {
-                reject(err);
-            });
+        try {
+            var data;
+            var interval;
+            //默认一秒查询一次
+            interval = setInterval(function () {
+                getQueue(curr_queue,{companyid:companyid}).then(function (message) {
+                    console.log("list_messages:" + message);
+                    data = message;
+                    if (message) {
+                        resove(data);
+                        //查到数据clear time，然后返回
+                        clearInterval(interval);
+                        clearTimeout(timeOut);
+                    }
+                }, function (err) {
+                    reject(err);
+                    //   console.error(err);
+                }).catch(function (err) {
+                    reject(err);
+                });
 
-        }, 1000);
-        //默认10秒后停止查询
-        var timeOut = setTimeout(function () {
-            clearInterval(interval);
-            resove(data);
-        }, 30000);
+            }, global.timerInterval);
+            //默认10秒后停止查询
+            var timeOut = setTimeout(function () {
+                clearInterval(interval);
+                resove(data);
+            }, global.timerTimeOut);
+
+        } catch (err) {
+            reject(err);
+        }
     });
     return p;
 };
@@ -211,7 +216,7 @@ exports.deleteQueueById = function (id, queueName) {
             .next(function (err, collinfo) {
                 if (collinfo) {
                     //获取collection
-                   var c=db.getCol(collinfo.name);
+                    var c = db.getCol(collinfo.name);
                     // The collection exists
                     c.findAndRemove({_id: mongoose.Types.ObjectId(id)}, function (err, node) {
                         if (err) {

@@ -9,7 +9,7 @@ var index = require('./routes/index');
 var users = require('./routes/users');
 /*************************************************/
 //mq：获取连接，加载mq的schema，加载mq的路由
-require('./models/queue_init');
+require('./models/queueInit');
 //require( './models/dataSchema');
 var mq=require('./routes/gateway');
 //longpolling

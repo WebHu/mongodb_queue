@@ -26,8 +26,8 @@ exports.validateData=function (req, res, next) {
         //校验
         var clientReference = req.body.clientReference;
         var payload = req.body.payload;
-        if (!clientReference || !payload) {
-            reject("clientReference/payload is undefined");
+              if (!clientReference || !payload ) {
+            reject("数据校验不通过");
         } else {
             try {
                 //判断是否为标准的json

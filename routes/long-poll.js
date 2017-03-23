@@ -16,13 +16,13 @@ var https = require("https");
 //引入dao
 var queueDao = require('../dao/queueDao');
 //引入初始化相关信息
-var init = require('../models/queue_init');
+var init = require('../models/queueInit');
 //log
 var log = require("../models/logger");
 var logger = log.logger;
 log.use(router);
 //引入validate
-var vali = require("./longpolling_validate");
+var vali = require("./validate");
 //为url绑定事件
 longpoll.create("/getQueueForTms",{"queueName":"tms_queue"});
 
